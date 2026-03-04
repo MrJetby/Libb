@@ -1,0 +1,170 @@
+package me.jetby.libb.action;
+
+import me.jetby.libb.action.impl.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Registry for all available actions with namespace support.
+ *
+ * <h3>Key format in config</h3>
+ * <pre>
+ *   [spawn]              → first registered handler with command "spawn" (any namespace)
+ *   [myplugin:spawn]     → explicit namespace, resolves only myplugin's handler
+ *   [otherplugin:spawn]  → explicit namespace, resolves only otherplugin's handler — no conflicts!
+ * </pre>
+ *
+ * <h3>Registering from another plugin</h3>
+ * <pre>{@code
+ * // onEnable
+ * ActionRegistry.register("myplugin", "spawn", (ctx, text) -> {
+ *     ctx.getPlayer().teleport(spawnLocation);
+ * });
+ *
+ * // onDisable
+ * ActionRegistry.unregisterAll("myplugin");
+ * }</pre>
+ */
+public final class ActionRegistry {
+
+    private ActionRegistry() {}
+
+    private static final Map<String, Action> HANDLERS = new LinkedHashMap<>();
+
+    public static final String LIBB = "libb";
+    static {
+        register(LIBB, "message",              new Message());
+        register(LIBB, "action_bar",           new ActionBar());
+        register(LIBB, "broadcast_action_bar", new BroadcastActionBar());
+        register(LIBB, "broadcast_message",    new BroadcastMessage());
+        register(LIBB, "broadcast_sound",      new BroadcastSound());
+        register(LIBB, "broadcast_title",      new BroadcastTitle());
+        register(LIBB, "console",              new Console());
+        register(LIBB, "effect",               new Effect());
+        register(LIBB, "player",               new Player());
+        register(LIBB, "open",                 new Open());
+        register(LIBB, "title",                new Title());
+        register(LIBB, "sound",                new Sound());
+        register(LIBB, "rebuild",              (ctx, text) -> {});
+        register(LIBB, "refresh",              (ctx, text) -> {});
+    }
+
+    /**
+     * Register a handler under the given namespace and command.
+     * The full internal key is {@code "namespace:command"}.
+     *
+     * @throws IllegalArgumentException if this namespace:command is already registered
+     */
+    public static void register(@NotNull String namespace, @NotNull String command, @NotNull Action handler) {
+        String full = fullKey(namespace, command);
+        if (HANDLERS.containsKey(full)) {
+            throw new IllegalArgumentException("Action '" + full + "' is already registered!");
+        }
+        HANDLERS.put(full, handler);
+    }
+
+    /**
+     * Overwrite a handler without throwing — use for overriding built-ins or hot-swapping.
+     */
+    public static void override(@NotNull String namespace, @NotNull String command, @NotNull Action handler) {
+        HANDLERS.put(fullKey(namespace, command), handler);
+    }
+
+    /**
+     * Get a handler directly by namespace and command.
+     */
+    @Nullable
+    public static Action get(@NotNull String namespace, @NotNull String command) {
+        return HANDLERS.get(fullKey(namespace, command));
+    }
+
+    /**
+     * Unregister a specific handler. Call this in {@code onDisable}.
+     */
+    public static boolean unregister(@NotNull String namespace, @NotNull String command) {
+        return HANDLERS.remove(fullKey(namespace, command)) != null;
+    }
+
+    /**
+     * Unregister all handlers belonging to a plugin at once.
+     * Convenient when you registered many commands.
+     *
+     * <pre>{@code
+     * // onDisable
+     * ActionRegistry.unregisterAll("myplugin");
+     * }</pre>
+     */
+    public static void unregisterAll(@NotNull String namespace) {
+        String prefix = namespace.toLowerCase() + ":";
+        HANDLERS.keySet().removeIf(key -> key.startsWith(prefix));
+    }
+
+    /**
+     * Find a handler by action line.
+     *
+     * <ul>
+     *   <li>{@code [myplugin:spawn] text} — explicit namespace, exact match</li>
+     *   <li>{@code [spawn] text}           — first registered handler with that command</li>
+     * </ul>
+     */
+    @Nullable
+    public static Action resolve(@NotNull String line) {
+        String lower = line.toLowerCase();
+
+        for (Map.Entry<String, Action> entry : HANDLERS.entrySet()) {
+            if (lower.startsWith("[" + entry.getKey() + "]")) {
+                return entry.getValue();
+            }
+        }
+
+        for (Map.Entry<String, Action> entry : HANDLERS.entrySet()) {
+            if (lower.startsWith("[" + commandPart(entry.getKey()) + "]")) {
+                return entry.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract the matched key from an action line — needed for {@link #extractText}.
+     * Returns the full key {@code "ns:cmd"} or the short form {@code "cmd"}.
+     */
+    @Nullable
+    public static String resolveKey(@NotNull String line) {
+        String lower = line.toLowerCase();
+
+        for (String full : HANDLERS.keySet()) {
+            if (lower.startsWith("[" + full + "]")) return full;
+        }
+
+        for (String full : HANDLERS.keySet()) {
+            String cmd = commandPart(full);
+            if (lower.startsWith("[" + cmd + "]")) return cmd;
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract the text after the key from an action line.
+     * {@code "[myplugin:spawn] some text"} → {@code "some text"}
+     */
+    @NotNull
+    public static String extractText(@NotNull String line, @NotNull String matchedKey) {
+        String text = line.substring(matchedKey.length() + 2); // +2 for '[' and ']'
+        return text.startsWith(" ") ? text.substring(1) : text;
+    }
+
+    private static String fullKey(String namespace, String command) {
+        return namespace.toLowerCase() + ":" + command.toLowerCase();
+    }
+
+    private static String commandPart(String fullKey) {
+        int idx = fullKey.indexOf(':');
+        return idx >= 0 ? fullKey.substring(idx + 1) : fullKey;
+    }
+}

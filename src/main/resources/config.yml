@@ -1,0 +1,95 @@
+
+id: main # the unique gui name
+title: "&0&lSimple gui"
+size: 54
+
+command:
+  - test
+  - example
+
+var:
+  example: 0
+
+pre_open:
+  check1:
+    if: "%num% > 6"
+  check2:
+    if: "9 < %num%"
+
+on_open:
+  - '[message] msg'
+  - example_check:
+      if: "10 > 15"
+      then:
+        - '[message] nice'
+      else:
+        - '[message] not nice'
+
+on_close: []
+
+Items:
+
+  example:
+    material: STONE
+    amount: 1
+    slot: 11
+
+    display_name: "Name"
+    lore:
+      - "Line1"
+
+    flags:
+      - HIDE_ATTRIBUTES
+
+    view_requirements:
+      check1:
+        if: ""
+        then:
+          - displayName: "Another name"
+          - lore:
+              - "Red"
+              - "----------"
+          - lore[2]: "Yellow"
+
+
+    on_click:
+      any:
+        - '[message] clicked'
+        - example_check:
+            if: "10 > 15"
+            then:
+              - '[message] nice'
+            else:
+              - '[message] not nice'
+      left:
+        - '[message] clicked left'
+
+      shift_left: []
+      right: []
+      shift_right: []
+      drop: []
+      control_drop: []
+      middle: []
+      double: []
+      num_1: []
+      num_2: []
+      num_3: []
+      num_4: []
+      num_5: []
+      num_6: []
+      num_7: []
+      num_8: []
+      num_9: []
+
+#
+#  example_free:
+#    type: free_zone
+#    slots:
+#      - '15-20'
+#
+#  example_free_usage:
+#    material: emerald
+#    type:
+#
+
+
