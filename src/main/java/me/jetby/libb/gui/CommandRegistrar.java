@@ -5,6 +5,7 @@ import me.jetby.libb.gui.parser.ParsedGui;
 import org.bukkit.command.*;
 import org.bukkit.command.defaults.BukkitCommand;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Field;
@@ -52,7 +53,7 @@ public class CommandRegistrar extends BukkitCommand implements CommandExecutor {
         }
     }
 
-    private static void registerCommand(Libb plugin, String commandName, @NotNull CommandExecutor executor) {
+    public static void registerCommand(JavaPlugin plugin, String commandName, @NotNull CommandExecutor executor) {
         try {
             Field commandMapField = plugin.getServer().getClass().getDeclaredField("commandMap");
             commandMapField.setAccessible(true);
@@ -79,7 +80,7 @@ public class CommandRegistrar extends BukkitCommand implements CommandExecutor {
 
 
     @SuppressWarnings("unchecked")
-    private static void unregisterCommand(Libb plugin, String commandName, CommandMap commandMap) {
+    private static void unregisterCommand(JavaPlugin plugin, String commandName, CommandMap commandMap) {
         try {
             Field knownCommandsField;
             try {
@@ -102,7 +103,7 @@ public class CommandRegistrar extends BukkitCommand implements CommandExecutor {
     }
 
 
-    public static void unregisterAll(Libb plugin) {
+    public static void unregisterAll(JavaPlugin plugin) {
         try {
             Field commandMapField = plugin.getServer().getClass().getDeclaredField("commandMap");
             commandMapField.setAccessible(true);

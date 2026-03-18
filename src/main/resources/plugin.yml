@@ -4,6 +4,6 @@ main: me.jetby.libb.Libb
 api-version: '1.20'
 load: STARTUP
 authors: [ MrJetby ]
-website: https://dsc.gg/treexstudio
+website: https://jetby.space
 commands:
   libb: {}
