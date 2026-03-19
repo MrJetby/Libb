@@ -34,8 +34,6 @@ public final class Libb extends JavaPlugin {
     public void onEnable() {
         instance = this;
         new Metrics(this, 30288);
-        saveDefaultConfig();
-
 
         getCommand("libb").setExecutor(new LibbCommand(this));
 
